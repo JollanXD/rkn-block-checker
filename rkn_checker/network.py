@@ -39,14 +39,7 @@ def check_tls(
     try:
         with socket.create_connection((host, port), timeout=timeout) as sock:
             with ctx.wrap_socket(sock, server_hostname=host) as ssock:
-                cert = ssock.getpeercert()
-                cn = None
-                if cert:
-                    for tup in cert.get("subject", ()):
-                        for k, v in tup:
-                            if k == "commonName":
-                                cn = v
-                                break
+                cn = _extract_cn(ssock.getpeercert())
                 return True, (time.monotonic() - start) * 1000, cn, None
     except socket.timeout:
         return False, None, None, "timeout"
@@ -56,3 +49,13 @@ def check_tls(
         return False, None, None, "connection reset during TLS"
     except OSError as e:
         return False, None, None, f"{type(e).__name__}: {e}"
+
+
+def _extract_cn(cert: Optional[dict]) -> Optional[str]:
+    if not cert:
+        return None
+    for tup in cert.get("subject", ()):
+        for k, v in tup:
+            if k == "commonName":
+                return v
+    return None
