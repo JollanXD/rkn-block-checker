@@ -112,3 +112,15 @@ def check_url(name: str, url: str, timeout: float = 5.0) -> CheckResult:
 
     res.verdict = Verdict.OK
     return res
+
+
+def check_urls_parallel(
+    urls: dict[str, str],
+    max_workers: int = DEFAULT_WORKERS,
+    timeout: float = 5.0,
+) -> list[CheckResult]:
+    items = list(urls.items())
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        return list(
+            pool.map(lambda kv: check_url(kv[0], kv[1], timeout=timeout), items)
+        )
