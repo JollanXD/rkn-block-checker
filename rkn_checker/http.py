@@ -35,7 +35,7 @@ def fetch(url: str, timeout: float = DEFAULT_TIMEOUT) -> HttpProbe:
         return HttpProbe(
             status_code=r.status_code,
             elapsed_ms=r.elapsed.total_seconds() * 1000,
-            body_snippet=r.text[:BODY_SNIPPET_LEN],
+            body_snippet=r.text[:BODY_SNIPPET_LEN].lower(),
         )
     except requests.exceptions.Timeout:
         return HttpProbe(error="timeout", timed_out=True)
