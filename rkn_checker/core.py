@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
 from urllib.parse import urlparse
 
 import requests
@@ -31,7 +30,6 @@ def check_url(name: str, url: str, timeout: float = 5.0) -> CheckResult:
     host = urlparse(url).hostname or url
     res = CheckResult(name=name, url=url)
 
-    # DNS
     res.sys_ip = dns_mod.resolve_system(host)
     res.doh_ip = dns_mod.resolve_doh(host, timeout=timeout)
 
@@ -51,7 +49,6 @@ def check_url(name: str, url: str, timeout: float = 5.0) -> CheckResult:
         res.dns_mismatch = True
         res.notes.append(f"DNS mismatch: sys={res.sys_ip} vs doh={res.doh_ip}")
 
-    # TCP
     res.tcp_ok, res.tcp_time_ms, res.tcp_error = network.check_tcp(
         host, timeout=timeout
     )
@@ -67,7 +64,6 @@ def check_url(name: str, url: str, timeout: float = 5.0) -> CheckResult:
             res.notes.append(f"TCP failed: {res.tcp_error}")
         return res
 
-    # TLS
     (
         res.tls_ok,
         res.tls_time_ms,
@@ -87,7 +83,6 @@ def check_url(name: str, url: str, timeout: float = 5.0) -> CheckResult:
             res.notes.append(f"TLS error: {res.tls_error}")
         return res
 
-    # HTTP
     probe = http_mod.fetch(url, timeout=timeout)
     res.status_code = probe.status_code
     res.plt_ms = probe.elapsed_ms
