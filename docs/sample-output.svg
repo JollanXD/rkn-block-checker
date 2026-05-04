@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 720" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13">
+  <!-- Terminal window chrome -->
+  <rect width="880" height="720" rx="8" fill="#1e1e2e"/>
+  <rect width="880" height="28" rx="8" fill="#181825"/>
+  <rect y="20" width="880" height="8" fill="#181825"/>
+  <circle cx="16" cy="14" r="6" fill="#f38ba8"/>
+  <circle cx="36" cy="14" r="6" fill="#f9e2af"/>
+  <circle cx="56" cy="14" r="6" fill="#a6e3a1"/>
+  <text x="440" y="18" fill="#6c7086" text-anchor="middle" font-size="11">rkn-check</text>
+
+  <!-- Match output.py ANSI palette:
+       cyan #89b4fa, green #a6e3a1, red #f38ba8, yellow #f9e2af,
+       gray/dim #6c7086, body #cdd6f4 -->
+  <style>
+    .body  { fill: #cdd6f4; }
+    .cyan  { fill: #89b4fa; font-weight: bold; }
+    .bold  { fill: #cdd6f4; font-weight: bold; }
+    .dim   { fill: #6c7086; }
+    .green { fill: #a6e3a1; }
+    .red   { fill: #f38ba8; }
+    .yel   { fill: #f9e2af; }
+  </style>
+
+  <g transform="translate(20, 50)">
+    <!-- Header -->
+    <text y="14" class="cyan">======================================================================</text>
+    <text y="32" class="cyan">  RKN Block Checker</text>
+    <text y="50" class="cyan">======================================================================</text>
+    <text y="68"><tspan class="dim">  IP:       </tspan><tspan class="body">95.165.xxx.xxx</tspan></text>
+    <text y="86"><tspan class="dim">  ISP:      </tspan><tspan class="body">AS12389 Rostelecom</tspan></text>
+    <text y="104"><tspan class="dim">  Location: </tspan><tspan class="body">Moscow, Moscow, RU</tspan></text>
+    <text y="122" class="cyan">----------------------------------------------------------------------</text>
+
+    <!-- Whitelist (compressed to 4 representative rows) -->
+    <text y="148" class="bold">Whitelist (should always work)</text>
+    <text y="166" class="dim">  name          verdict            TCP     TLS     PLT  status</text>
+    <text y="184" class="dim">  ------------------------------------------------------------</text>
+    <text y="202"><tspan class="body">  gosuslugi     </tspan><tspan class="green">✓ OK          </tspan><tspan class="body">  18ms    42ms   380ms  200</tspan></text>
+    <text y="220"><tspan class="body">  yandex        </tspan><tspan class="green">✓ OK          </tspan><tspan class="body">   8ms    25ms    95ms  200</tspan></text>
+    <text y="238"><tspan class="body">  sberbank      </tspan><tspan class="green">✓ OK          </tspan><tspan class="body">  12ms    38ms   250ms  200</tspan></text>
+    <text y="256"><tspan class="body">  vk            </tspan><tspan class="green">✓ OK          </tspan><tspan class="body">   9ms    28ms   180ms  200</tspan></text>
+    <text y="274" class="dim">  ... 17 more rows ...</text>
+
+    <!-- Blacklist -->
+    <text y="306" class="bold">Blacklist (RKN-restricted)</text>
+    <text y="324" class="dim">  name          verdict            TCP     TLS     PLT  status</text>
+    <text y="342" class="dim">  ------------------------------------------------------------</text>
+    <text y="360"><tspan class="body">  instagram     </tspan><tspan class="red">✗ TLS BLOCK   </tspan><tspan class="body">  22ms       —       —  —</tspan></text>
+    <text y="378" class="dim">    └ TLS reset — DPI cutting on SNI (typical RKN/TSPU)</text>
+    <text y="396"><tspan class="body">  twitter/x     </tspan><tspan class="red">✗ TLS BLOCK   </tspan><tspan class="body">  24ms       —       —  —</tspan></text>
+    <text y="414" class="dim">    └ TLS timeout — silent drop after ClientHello</text>
+    <text y="432"><tspan class="body">  rutracker     </tspan><tspan class="red">✗ HTTP STUB   </tspan><tspan class="body">  18ms    45ms   120ms  200</tspan></text>
+    <text y="450" class="dim">    └ response body matches an ISP stub-page marker</text>
+    <text y="468"><tspan class="body">  protonvpn     </tspan><tspan class="red">✗ DNS BLOCK   </tspan><tspan class="body">     —       —       —  —</tspan></text>
+    <text y="486" class="dim">    └ system DNS doesn't resolve, DoH does — DNS poisoning</text>
+    <text y="504" class="dim">  ... 11 more rows ...</text>
+
+    <!-- Summary -->
+    <text y="534" class="cyan">======================================================================</text>
+    <text y="552" class="bold">  Summary</text>
+    <text y="570" class="cyan">----------------------------------------------------------------------</text>
+    <text y="588" class="body">  Whitelist: 21/21 working</text>
+    <text y="606" class="body">  Blacklist: 3/15 open, 12/15 blocked</text>
+    <text y="630"><tspan class="red bold">  → You ARE in an RKN-blocked zone.</tspan></text>
+    <text y="654" class="dim">  Block types in the blacklist:</text>
+  </g>
+</svg>
