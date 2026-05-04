@@ -235,12 +235,12 @@ Releases are pushed to PyPI automatically by the `release.yml` workflow when a
 token in repo secrets.
 
 One-time setup on PyPI: add a pending publisher pointing at this repo, the
-`release.yml` workflow, and the `pypi` environment. Then to ship `0.2.0`:
+`release.yml` workflow, and the `pypi` environment. Then to ship `0.2.1`:
 
 ```bash
 # bump version in pyproject.toml first, commit
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
 The workflow checks that the tag matches `pyproject.toml`'s version, builds
