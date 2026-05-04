@@ -1,7 +1,6 @@
 # RKN Block Checker
 
-[![PyPI](https://img.shields.io/pypi/v/rkn-block-checker.svg)](https://pypi.org/project/rkn-block-checker/)
-[![CI](https://github.com/MayersScott/rkn-block-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/MayersScott/rkn-block-checker/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/rkn-block-checker.svg?cache=20260504)](https://pypi.org/project/rkn-block-checker/)[![CI](https://github.com/MayersScott/rkn-block-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/MayersScott/rkn-block-checker/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
