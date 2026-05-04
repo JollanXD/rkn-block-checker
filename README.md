@@ -1,5 +1,6 @@
 # RKN Block Checker
 
+[![PyPI](https://img.shields.io/pypi/v/rkn-block-checker.svg)](https://pypi.org/project/rkn-block-checker/)
 [![CI](https://github.com/MayersScott/rkn-block-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/MayersScott/rkn-block-checker/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -14,6 +15,11 @@ it broke. That tells you a lot more about your situation than a generic
 "this site can't be reached" page.
 
 ## Example output
+
+![rkn-check sample output](docs/sample-output.svg)
+
+<details>
+<summary>Same output as plain text</summary>
 
 ```text
 ======================================================================
@@ -61,20 +67,22 @@ Blacklist (RKN-restricted)
 ======================================================================
 ```
 
+</details>
+
 ## Install
 
 Python 3.10+.
 
 ```bash
-git clone https://github.com/MayersScott/rkn-block-checker.git
-cd rkn-block-checker
-pip install -r requirements.txt
-python -m rkn_checker
+pip install rkn-block-checker
+rkn-check
 ```
 
-Or as a package:
+Or from source:
 
 ```bash
+git clone https://github.com/MayersScott/rkn-block-checker.git
+cd rkn-block-checker
 pip install -e .
 rkn-check
 ```
@@ -95,10 +103,77 @@ rkn-check [-h] [--json] [--white] [--black] [--timeout TIMEOUT]
 | `--workers` | thread pool size for parallel checks (default 10) |
 | `-v` / `-vv` | logging at INFO / DEBUG |
 
-JSON output pipes nicely into `jq`:
+## JSON output
+
+`--json` emits one object containing `self_info` (the IP/ISP block from the
+header) and the two result lists. Every result is the full per-target probe
+trace: which DNS resolver returned what, whether TCP and TLS succeeded with
+timings, the HTTP status, the verdict, and human-readable notes.
+
+A trimmed sample (full version: [`docs/sample-output.json`](docs/sample-output.json)):
+
+```json
+{
+  "self_info": {
+    "ip": "95.165.xxx.xxx",
+    "city": "Moscow",
+    "country": "RU",
+    "org": "AS12389 Rostelecom"
+  },
+  "whitelist": [
+    {
+      "name": "gosuslugi",
+      "url": "https://www.gosuslugi.ru/",
+      "verdict": "OK",
+      "notes": [],
+      "sys_ip": "95.181.182.36",
+      "doh_ip": "95.181.182.36",
+      "dns_mismatch": false,
+      "tcp_ok": true,  "tcp_time_ms": 18.4,
+      "tls_ok": true,  "tls_time_ms": 42.1, "tls_cert_cn": "*.gosuslugi.ru",
+      "status_code": 200, "plt_ms": 380.7
+    }
+  ],
+  "blacklist": [
+    {
+      "name": "instagram",
+      "url": "https://www.instagram.com/",
+      "verdict": "TLS_BLOCK",
+      "notes": ["TLS reset — DPI cutting on SNI (typical RKN/TSPU)"],
+      "sys_ip": "157.240.20.174", "doh_ip": "157.240.20.174",
+      "tcp_ok": true,  "tcp_time_ms": 22.4,
+      "tls_ok": false, "tls_error": "connection reset by peer"
+    },
+    {
+      "name": "protonvpn",
+      "url": "https://protonvpn.com/",
+      "verdict": "DNS_BLOCK",
+      "notes": ["system DNS doesn't resolve, DoH does — DNS poisoning"],
+      "sys_ip": null, "doh_ip": "185.70.40.182",
+      "dns_error": "system resolver failed, DoH succeeded",
+      "tcp_ok": false
+    }
+  ]
+}
+```
+
+`verdict` is one of `OK`, `DNS_BLOCK`, `TCP_RESET`, `TLS_BLOCK`, `HTTP_STUB`,
+`TIMEOUT`, `DOWN`, or `UNKNOWN`. The probe trace fields (`sys_ip`, `tcp_ok`,
+`tls_ok`, etc.) are always present so you can tell *why* a verdict was reached
+— a `TLS_BLOCK` with `tcp_ok: true` is the DPI-on-SNI signature; one with
+`tcp_ok: false` would mean something else failed first.
+
+Pipes nicely into `jq`:
 
 ```bash
-rkn-check --json | jq '.blacklist[] | select(.verdict != "OK") | .name'
+# names of every blocked site
+rkn-check --json | jq -r '.blacklist[] | select(.verdict != "OK") | .name'
+
+# count by block type
+rkn-check --json | jq '.blacklist | group_by(.verdict) | map({verdict: .[0].verdict, count: length})'
+
+# only DPI-style blocks (TCP fine, TLS dies)
+rkn-check --json | jq '.blacklist[] | select(.verdict == "TLS_BLOCK" and .tcp_ok)'
 ```
 
 ## How it works
@@ -146,12 +221,32 @@ tests/            # pytest, all network calls mocked
 ## Tests
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 pytest
 ```
 
 No network calls in the test suite — every probe is mocked, so it runs the
 same in CI, on a plane, or behind a corporate proxy.
+
+## Releasing
+
+Releases are pushed to PyPI automatically by the `release.yml` workflow when a
+`v*` tag is pushed. The workflow uses
+[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — no API
+token in repo secrets.
+
+One-time setup on PyPI: add a pending publisher pointing at this repo, the
+`release.yml` workflow, and the `pypi` environment. Then to ship `0.2.0`:
+
+```bash
+# bump version in pyproject.toml first, commit
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The workflow checks that the tag matches `pyproject.toml`'s version, builds
+sdist + wheel, runs `twine check --strict`, publishes to PyPI, and attaches
+the artifacts to a GitHub Release with auto-generated notes.
 
 ## Caveats
 
