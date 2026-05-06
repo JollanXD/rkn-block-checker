@@ -7,6 +7,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .core import check_url, get_self_info
+from .lists import ListLoadError, load_targets
 from .models import CheckResult
 from .output import print_header, print_result, print_section, print_summary
 from .targets import BLACK_URLS, WHITE_URLS
@@ -26,6 +27,12 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="check only the control (whitelist) targets")
     p.add_argument("--black", dest="black_only", action="store_true",
                    help="check only the blacklist targets")
+    p.add_argument("--white-file", dest="white_file", metavar="PATH",
+                   help="load whitelist targets from a .txt or .json file "
+                        "(replaces the built-in whitelist)")
+    p.add_argument("--black-file", dest="black_file", metavar="PATH",
+                   help="load blacklist targets from a .txt or .json file "
+                        "(replaces the built-in blacklist)")
     p.add_argument("--timeout", type=float, default=5.0,
                    help="per-probe timeout in seconds (default: 5.0)")
     p.add_argument("--workers", type=int, default=10,
@@ -48,31 +55,38 @@ def _setup_logging(verbosity: int) -> None:
     )
 
 
+def _resolve_lists(
+    white_file: str | None,
+    black_file: str | None,
+) -> tuple[dict[str, str], dict[str, str]]:
+    white = WHITE_URLS
+    black = BLACK_URLS
+    if white_file:
+        white = load_targets(white_file)
+    if black_file:
+        black = load_targets(black_file)
+    return white, black
+
+
 def _run_streaming(
     run_white: bool,
     run_black: bool,
+    white_urls: dict[str, str],
+    black_urls: dict[str, str],
     workers: int,
     timeout: float,
 ) -> tuple[list[CheckResult], list[CheckResult]]:
-    """Run both groups in a single pool, print each result the moment it lands.
-
-    Whitelist results print first (in completion order, under the whitelist
-    section), then blacklist results (under the blacklist section). Both
-    groups are executing in parallel the whole time, so by the time the
-    whitelist section finishes printing, most of the blacklist is already
-    done — the blacklist section then drains nearly instantly.
-    """
     white_results: list[CheckResult] = []
     black_results: list[CheckResult] = []
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         white_futs = {
             pool.submit(check_url, name, url, timeout): name
-            for name, url in (WHITE_URLS.items() if run_white else [])
+            for name, url in (white_urls.items() if run_white else [])
         }
         black_futs = {
             pool.submit(check_url, name, url, timeout): name
-            for name, url in (BLACK_URLS.items() if run_black else [])
+            for name, url in (black_urls.items() if run_black else [])
         }
 
         if run_white:
@@ -98,19 +112,23 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     _setup_logging(args.verbose)
 
+    try:
+        white_urls, black_urls = _resolve_lists(args.white_file, args.black_file)
+    except ListLoadError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
     run_white = not args.black_only
     run_black = not args.white_only
 
     if args.as_json:
-        # JSON mode collects everything before emitting one document — there's
-        # no streaming benefit since the consumer is parsing a single object.
         from .core import check_urls_parallel
         white_results = (
-            check_urls_parallel(WHITE_URLS, args.workers, args.timeout)
+            check_urls_parallel(white_urls, args.workers, args.timeout)
             if run_white else []
         )
         black_results = (
-            check_urls_parallel(BLACK_URLS, args.workers, args.timeout)
+            check_urls_parallel(black_urls, args.workers, args.timeout)
             if run_black else []
         )
         payload = {
@@ -121,14 +139,12 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(payload, sys.stdout, ensure_ascii=False, indent=2)
         sys.stdout.write("\n")
         return 0
-
-    # Print the header first so the user immediately sees their IP/ISP
-    # while the per-target probes run in the background.
+    
     print_header(get_self_info(timeout=args.timeout))
     sys.stdout.flush()
 
     white_results, black_results = _run_streaming(
-        run_white, run_black, args.workers, args.timeout
+        run_white, run_black, white_urls, black_urls, args.workers, args.timeout,
     )
 
     if run_white and run_black:
