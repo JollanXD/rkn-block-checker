@@ -86,6 +86,40 @@ pip install -e .
 rkn-check
 ```
 
+## Run with Docker
+
+Build the image:
+
+```bash
+docker build -t rkn-block-checker .
+```
+
+Show CLI help:
+
+```bash
+docker run --rm rkn-block-checker
+```
+
+Run a real check:
+
+```bash
+docker run --rm rkn-block-checker --json
+```
+
+Use custom target lists from the current directory:
+
+```bash
+docker run --rm -v "$PWD:/work" -w /work rkn-block-checker \
+  --white-file ./whitelist.txt \
+  --black-file ./blacklist.txt
+```
+
+With Docker Compose:
+
+```bash
+docker compose run --rm rkn-check --json
+```
+
 ## Usage
 
 ```text
