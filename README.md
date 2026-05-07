@@ -499,8 +499,9 @@ order their contributions landed:
   reproduction with `host(1)` made the bug obvious; led to set-based DNS
   comparison that only flags rewriting when the address sets are completely
   disjoint.
-- [@tagantank](https://github.com/tagantank) - Docker / Compose support
-  ([#3](https://github.com/MayersScott/rkn-block-checker/pull/3)).
+- [@tagantank](https://github.com/tagantank) — Docker / Compose support
+  ([#3](https://github.com/MayersScott/rkn-block-checker/pull/3)) so the
+  tool can be run without touching the host's Python environment.
 
 If you spot something off, open an issue with a reproduction - that's the
 single most useful thing you can do.
