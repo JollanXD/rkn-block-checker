@@ -27,7 +27,12 @@ def get_self_info(timeout: float = 5.0) -> dict:
     return {}
 
 
-def check_url(name: str, url: str, timeout: float = 5.0) -> CheckResult:
+def check_url(
+    name: str,
+    url: str,
+    timeout: float = 5.0,
+    identify: bool = False,
+) -> CheckResult:
     host = urlparse(url).hostname or url
     res = CheckResult(name=name, url=url)
 
@@ -118,7 +123,7 @@ def check_url(name: str, url: str, timeout: float = 5.0) -> CheckResult:
             res.notes.append(f"TLS error: {res.tls_error}")
         return res
 
-    probe = http_mod.fetch(url, timeout=timeout)
+    probe = http_mod.fetch(url, timeout=timeout, identify=identify)
     res.status_code = probe.status_code
     res.plt_ms = probe.elapsed_ms
     res.http_error = probe.error
@@ -155,6 +160,7 @@ def iter_check_urls(
     urls: dict[str, str],
     max_workers: int = DEFAULT_WORKERS,
     timeout: float = 5.0,
+    identify: bool = False,
 ) -> Iterator[CheckResult]:
     """Yield CheckResult objects as soon as each probe finishes.
 
@@ -168,7 +174,7 @@ def iter_check_urls(
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures_map: dict = {}
         for name, url in urls.items():
-            fut = pool.submit(check_url, name, url, timeout)
+            fut = pool.submit(check_url, name, url, timeout, identify)
             futures_map[fut] = name
         for fut in as_completed(futures_map):
             try:
@@ -186,6 +192,7 @@ def check_urls_parallel(
     urls: dict[str, str],
     max_workers: int = DEFAULT_WORKERS,
     timeout: float = 5.0,
+    identify: bool = False,
 ) -> list[CheckResult]:
     """Run all probes in parallel and return results in the original input order.
 
@@ -196,6 +203,8 @@ def check_urls_parallel(
     name_order = list(urls.keys())
     by_name = {
         r.name: r
-        for r in iter_check_urls(urls, max_workers=max_workers, timeout=timeout)
+        for r in iter_check_urls(
+            urls, max_workers=max_workers, timeout=timeout, identify=identify,
+        )
     }
     return [by_name[name] for name in name_order if name in by_name]
