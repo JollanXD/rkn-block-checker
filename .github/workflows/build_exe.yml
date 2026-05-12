@@ -1,4 +1,4 @@
-name: Build EXE
+name: Build My EXE
 on: workflow_dispatch
 jobs:
   build:
@@ -14,8 +14,14 @@ jobs:
           pip install pyinstaller
       - name: Create EXE
         run: |
-          echo "from rkn_block_checker.cli import main; import sys; if __name__ == '__main__': main()" > run_me.py
-          pyinstaller --onefile --console --name rkn_checker run_me.py
+          # Создаем файл через многострочный ввод, чтобы не было проблем с кавычками
+          copy con run_me.py
+          from rkn_block_checker.cli import main
+          import sys
+          if __name__ == '__main__':
+              main()
+          ^Z
+          pyinstaller --onefile --console --name rkn_checker --collect-all rkn_block_checker run_me.py
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
