@@ -1,0 +1,23 @@
+name: Build EXE
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: |
+          pip install .
+          pip install pyinstaller
+      - name: Create EXE
+        run: |
+          echo "from rkn_block_checker.cli import main; import sys; if __name__ == '__main__': main()" > run_me.py
+          pyinstaller --onefile --console --name rkn_checker run_me.py
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: rkn-checker-ready
+          path: dist/rkn_checker.exe
